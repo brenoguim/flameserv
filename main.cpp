@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <netinet/in.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -51,7 +52,7 @@ struct Socket
 
     ~Socket()
     {
-         ::close(sockfd);
+        ::close(sockfd);
     }
 
     std::optional<Connection> waitConnection()
@@ -122,8 +123,11 @@ struct Response
     std::string m_body;
 };
 
+void sigintHandler(int sig_num) {}
+
 int main()
 {
+    signal(SIGINT, sigintHandler);
     Socket s;
     while (auto opt_conn = s.waitConnection())
     {
@@ -137,4 +141,5 @@ int main()
         n = write(conn.fd, r.data(), r.size());
         std::cout << "Wrote back " << n << " bytes" << std::endl;
     }
+    std::cout << "Shutting down" << std::endl;
 }
