@@ -1,4 +1,4 @@
-#include "Socket.h"
+#include "SocketServer.h"
 #include "ThreadPool.h"
 #include "FlameServer.h"
 
@@ -9,9 +9,9 @@ void sigintHandler(int sig_num) {}
 int main()
 {
     signal(SIGINT, sigintHandler);
-    Socket s;
+    SocketServer s;
     ThreadPool thpool(4);
-    while (auto opt_conn = s.waitConnection())
+    while (auto opt_conn = s.waitSocket())
     {
         thpool.add(FlameServer{std::move(*opt_conn)});
     }

@@ -48,13 +48,15 @@ class ThreadPool
         while (threads-- > 0)
         {
             m_threads.emplace_back(
-                [this] {
+                [this]
+                {
                     Job j;
                     while (true)
                     {
                         {
                             std::unique_lock guard(m_jobsMutex);
-                            m_waker.wait(guard, [this] { return !m_jobs.empty() || m_stop; });
+                            if (m_stop) return;
+                            m_waker.wait(guard, [this] { return m_stop || !m_jobs.empty(); });
                             if (m_stop) return;
                             j = std::move(m_jobs.back());
                             m_jobs.pop_back();
@@ -85,9 +87,8 @@ class ThreadPool
         {
             std::unique_lock guard(m_jobsMutex);
             m_stop = true;
-            guard.unlock();
-            m_waker.notify_all();
         }
+        m_waker.notify_all();
         for (auto& th : m_threads) th.join();
     }
 

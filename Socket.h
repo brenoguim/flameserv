@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Connection.h"
-
 #include <cassert>
 #include <optional>
+#include <cstring>
 
 #include <netinet/in.h>
 #include <sys/select.h>
@@ -13,52 +12,35 @@
 
 struct Socket
 {
-    Socket()
-    {
-        sockfd = ::socket(/*domain*/AF_INET, /*type*/SOCK_STREAM, /*protocol*/0);
-        if (sockfd < 0)
-            throw std::runtime_error("Failure to create socket");
+    explicit Socket(int pfd) : fd(pfd) {}
 
-        sockaddr_in serv_addr {};
-        int portno = 8081;
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(portno);
-        if (auto err = bind(sockfd, (const sockaddr*) &serv_addr, sizeof(serv_addr)); err < 0) 
-            throw std::runtime_error("Failure to bind socket: " + std::to_string(err));
+    Socket(const Socket&) = delete;
+    Socket& operator=(const Socket&) = delete;
 
-        if (::listen(sockfd, 5) < 0)
-            throw std::runtime_error("Error on listen");
-    }
+    Socket(Socket&& other) noexcept : fd(std::exchange(other.fd, -1)) {}
+    Socket& operator=(Socket&& other) noexcept { std::swap(fd, other.fd); return *this; }
 
     ~Socket()
     {
-        ::close(sockfd);
+        if (fd != -1) close(fd);
     }
-
-    std::optional<Connection> waitConnection()
-    {
-        // wait until there is a connection
-        timeval timeout = {20000, 0};
-
-        fd_set read_fd_set;
-        FD_ZERO(&read_fd_set);
-        FD_SET(sockfd, &read_fd_set);
-
-        int r = select(sockfd + 1, &read_fd_set, nullptr, nullptr, &timeout);
-        if (r == 0)
-            return {};
-        if (r < 0)
-            return {};
-        assert(r == 1);
-
-        sockaddr_in cli_addr {};
-        socklen_t clilen = sizeof(cli_addr);
-        auto newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        if (newsockfd < 0) 
-            return {};
-        return Connection{newsockfd};
-    }
-
-    int sockfd;
+    int fd {-1};
 };
+
+inline std::string read(const Socket& conn)
+{
+    char buffer[10*256];
+    std::memset(buffer, 0, 10*256);
+    auto n = read(conn.fd, buffer, 10*256-1);
+    return std::string(buffer, n);
+}
+
+inline void write(const Socket& conn, std::string_view buf)
+{
+    while (!buf.empty())
+    {
+        auto n = write(conn.fd, buf.data(), buf.size());
+        buf = buf.substr(n);
+    }
+}
+

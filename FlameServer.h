@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Connection.h"
+#include "Socket.h"
 #include "Http.h"
 
 #include <cstring>
@@ -43,5 +43,5 @@ struct FlameServer
 
     }
 
-    Connection conn;
+    Socket conn;
 };
