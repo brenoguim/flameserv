@@ -5,12 +5,15 @@
 #include <thread>
 #include <memory>
 
+
+class ThreadPool;
+
 class Job
 {
     struct Ifc
     {
         virtual ~Ifc() = default;
-        virtual void execute() = 0;
+        virtual void execute(ThreadPool&) = 0;
     };
 
     template<class Fn>
@@ -19,7 +22,7 @@ class Job
         template<class FnArg>
         Impl(FnArg&& fn) : f(std::forward<FnArg>(fn)) {}
 
-        void execute() override { f(); }
+        void execute(ThreadPool& thp) override { f(thp); }
         Fn f;
     };
   public:
@@ -31,7 +34,7 @@ class Job
 
     Job() = default;
 
-    void operator()() { if (m_ifc) m_ifc->execute(); }
+    void operator()(ThreadPool& thp) { if (m_ifc) m_ifc->execute(thp); }
   private:
 
     std::unique_ptr<Ifc> m_ifc;
@@ -56,7 +59,7 @@ class ThreadPool
                             j = std::move(m_jobs.back());
                             m_jobs.pop_back();
                         }
-                        j();
+                        j(*this);
                     }
                 });
         }
