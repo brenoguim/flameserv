@@ -16,8 +16,8 @@ struct Connection
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
-    Connection(Connection&& other) : fd(std::exchange(other.fd, -1)) {}
-    Connection& operator=(Connection&& other) { std::swap(fd, other.fd); return *this; }
+    Connection(Connection&& other) noexcept : fd(std::exchange(other.fd, -1)) {}
+    Connection& operator=(Connection&& other) noexcept { std::swap(fd, other.fd); return *this; }
 
     ~Connection()
     {

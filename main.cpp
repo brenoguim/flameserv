@@ -24,7 +24,7 @@ int main()
             std::cout << "Wrote back " << n << " bytes" << std::endl;
         };
 
-        //thpool.add(std::move(fn));
+        thpool.add(std::move(fn));
     }
     std::cout << "Shutting down" << std::endl;
 }

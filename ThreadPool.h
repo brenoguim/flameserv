@@ -3,12 +3,43 @@
 #include <list>
 #include <mutex>
 #include <thread>
+#include <memory>
+
+class Job
+{
+    struct Ifc
+    {
+        virtual ~Ifc() = default;
+        virtual void execute() = 0;
+    };
+
+    template<class Fn>
+    struct Impl : public Ifc
+    {
+        template<class FnArg>
+        Impl(FnArg&& fn) : f(std::forward<FnArg>(fn)) {}
+
+        void execute() override { f(); }
+        Fn f;
+    };
+  public:
+    template<class Fn>
+    explicit Job(Fn fn)
+    {
+        m_ifc = std::make_unique<Impl<Fn>>(std::move(fn));
+    }
+
+    Job() = default;
+
+    void operator()() { if (m_ifc) m_ifc->execute(); }
+  private:
+
+    std::unique_ptr<Ifc> m_ifc;
+};
 
 class ThreadPool
 {
   public:
-    using Job = std::function<void()>;
-
     explicit ThreadPool(int threads = 2)
     {
         while (threads-- > 0)
@@ -35,7 +66,7 @@ class ThreadPool
     void add(Fn&& fn)
     {
         std::unique_lock guard(m_jobsMutex);
-        m_jobs.push_back(std::forward<Fn>(fn));
+        m_jobs.emplace_back(std::forward<Fn>(fn));
         guard.unlock();
         m_waker.notify_one();
     }
