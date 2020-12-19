@@ -46,15 +46,17 @@ std::string Response::to_bytes() const
     return r;
 }
 
-inline Response make_html_response(std::string body)
+inline Response make_text_response(std::string body, std::string_view type = "plain")
 {
     Response r;
-    r.m_attrs["Content-Type"].push_back("text/html");
+    r.m_attrs["Content-Type"].push_back("text/" + std::string(type));
     r.m_attrs["Content-Type"].push_back("charset=UTF-8");
     r.m_attrs["Connection"].push_back("close");
     r.m_body = std::move(body);
     return r;
 }
+
+inline Response make_html_response(std::string body) { return make_text_response(std::move(body), "html"); }
 
 
 // GET / HTTP/1.1
