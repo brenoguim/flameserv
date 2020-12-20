@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <optional>
+#include <stdexcept>
 
 #include <netinet/in.h>
 #include <sys/select.h>
