@@ -71,7 +71,7 @@ struct FlameServer
 
     Response getFlameGraphResponse(std::string_view path)
     {
-	return make_html_response("you are in the flamegraph");
+        return getBrowseResponse(fs::absolute(fs::path{"data"} / path).string());
     }
 
     Response getFlameGraphPostResponse(const Request& r, std::string_view path)
@@ -105,7 +105,7 @@ struct FlameServer
             for (const auto & entry : fs::directory_iterator(fspath, fs::directory_options::skip_permission_denied))
             {
                 auto entrypath = entry.path().string();
-                body += "<a href=\"" + entrypath + "\">" + entrypath + "</a><br>\n";
+                body += "<a href=\"/browse" + entrypath + "\">" + entrypath + "</a><br>\n";
             }
             body += "\n</body></html>";
             return make_html_response(std::move(body));
