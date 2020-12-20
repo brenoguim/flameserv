@@ -11,6 +11,8 @@
 
 struct HttpMessage
 {
+    std::string to_bytes() const;
+    std::string httpversion;
     std::map<std::string, std::vector<std::string>> m_attrs;
     std::string m_body;
 };
@@ -19,14 +21,15 @@ struct Request : public HttpMessage
 {
     std::string operation;
     std::string path;
+    bool isPost() const { return operation == "POST"; }
+    bool isGet() const { return operation == "GET"; }
 };
 
 struct Response : public HttpMessage
 {
-    std::string to_bytes() const;
 };
 
-std::string Response::to_bytes() const
+std::string HttpMessage::to_bytes() const
 {
     std::string r = "HTTP/1.1 200 OK\n";
     for (auto& [k, vs] : m_attrs) {
@@ -72,11 +75,40 @@ inline Response make_html_response(std::string body) { return make_text_response
 
 inline Request parse_html_request(std::string_view str)
 {
-    std::istringstream ss{std::string(str)};
+    auto by_line = [&str] () mutable -> std::optional<std::string_view> {
+        if (str.size() == 0)
+            return {};
+        auto eol = str.find('\r');
+        if (eol == std::string::npos)
+            eol = str.size();
+        auto ret = str.substr(0, eol);
+        str.remove_prefix(eol + 2);
+        return ret;
+    };
 
     Request r;
-    ss >> r.operation;
-    ss >> r.path;
-
+    bool header = true;
+    while (auto opt_line = by_line())
+    {
+        auto& line = *opt_line;
+        if (header)
+        {
+            std::istringstream ssh{std::string(line)};
+            ssh >> r.operation;
+            ssh >> r.path;
+            ssh >> r.httpversion;
+            header = false;
+        }
+        else
+        {
+            auto separator = line.find(':');
+            if (separator == std::string::npos)
+                break;
+            auto key = line.substr(0, separator);
+            auto value = line.substr(separator+2);
+            r.m_attrs[std::string(key)].emplace_back(value);
+        }
+    }
+    r.m_body = str;
     return r;
 }
