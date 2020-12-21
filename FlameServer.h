@@ -85,6 +85,14 @@ struct FlameServer
         fs::path fspath{"./data"};
         fspath /= path;
 
+        int i = 1;
+        while (fs::exists(fspath))
+        {
+            fspath = fs::path{"./data"};
+            fspath /= std::to_string(i) + "_" + std::string(path);
+            i++;
+        }
+
         std::fstream of(fspath.string(), std::fstream::out);
         if (!of.is_open())
             return make_html_response("Error: Could not open file");
