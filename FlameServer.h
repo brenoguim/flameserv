@@ -35,7 +35,7 @@ struct FlameServer
     void operator()(ThreadPool&)
     {
         std::cout << "Got a connection" << std::endl;
-        auto req = parse_html_request(read(conn));
+        auto req = parse_html_request(conn);
 
         auto response = [&] {
             if (req.isGet())

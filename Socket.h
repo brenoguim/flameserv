@@ -4,11 +4,13 @@
 #include <cstring>
 #include <optional>
 #include <string>
+#include <iostream>
 
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 struct Socket
@@ -31,9 +33,10 @@ struct Socket
 inline std::string read(const Socket& conn)
 {
     char buffer[10*256];
-    std::memset(buffer, 0, 10*256);
-    auto n = read(conn.fd, buffer, 10*256-1);
-    return std::string(buffer, n);
+    std::string str;
+    int n = read(conn.fd, buffer, 10*256-1);
+    str += std::string(buffer, n);
+    return str;
 }
 
 inline void write(const Socket& conn, std::string_view buf)

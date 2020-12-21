@@ -73,8 +73,10 @@ inline Response make_html_response(std::string body) { return make_text_response
 // Accept-Encoding: gzip, deflate
 // Accept-Language: en-US,en;q=0.9,de;q=0.8,pt;q=0.7,es;q=0.6
 
-inline Request parse_html_request(std::string_view str)
+inline Request parse_html_request(const Socket& s)
 {
+    std::string buf = read(s);
+    std::string_view str = buf;
     auto by_line = [&str] () mutable -> std::optional<std::string_view> {
         if (str.size() == 0)
             return {};
@@ -110,5 +112,14 @@ inline Request parse_html_request(std::string_view str)
         }
     }
     r.m_body = str;
+    if (r.m_attrs.count("Content-Length"))
+    {
+        std::size_t len = std::atol(r.m_attrs["Content-Length"].front().c_str());
+        while (r.m_body.size() != len)
+        {
+            r.m_body += read(s);
+        }
+    }
+
     return r;
 }
